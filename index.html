@@ -239,6 +239,20 @@ function dlReport(){let h='<!DOCTYPE html><html><head><meta charset="UTF-8"><tit
 async function cAPI(u,m){const b={model:MD,max_tokens:3000,system:[{type:'text',text:gSys(),cache_control:{type:'ephemeral'}}]};b.messages=u?[{role:'user',content:u}]:m;const r=await fetch(AU,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});if(!r.ok){const txt=await r.text();console.error('API Error:',r.status,txt);throw new Error('Erro '+r.status+': '+txt.substring(0,300))}const d=await r.json();return d.content.find(c=>c.type==='text')?.text||''}
 function pJ(t){try{return JSON.parse(t)}catch(e){}const m=t.match(/```(?:json)?\s*([\s\S]*?)```/);if(m)try{return JSON.parse(m[1])}catch(e){}const s=t.indexOf('{'),e=t.lastIndexOf('}');if(s!==-1&&e!==-1)try{return JSON.parse(t.substring(s,e+1))}catch(e){}throw new Error('Resposta não interpretável.')}
 function fm(s){return s?s.replace(/\n/g,'<br>'):''}
+// Check daily limit IMMEDIATELY on page load — before tutorial
+(function(){
+  const saved=localStorage.getItem('marca_last_session');
+  if(!saved)return;
+  try{
+    const d=JSON.parse(saved);
+    const today=new Date().toISOString().slice(0,10);
+    if(d.date===today){
+      document.getElementById('tutorial').classList.remove('open');
+      document.getElementById('modesel').classList.remove('active');
+      showBlocked(d);
+    }
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
