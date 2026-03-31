@@ -64,12 +64,11 @@ html.dark{--bg:#0a0a0f;--white:#111118;--s1:#18181f;--s2:#252530;--ink:#e8e4dc;-
 <div class="screen" id="briefing"><div class="bf-inner"><div class="bf-tag">Briefing</div><div class="bf-title" id="b-title">Carregando...</div><div class="bf-ep" id="b-ep"></div><div class="bf-body" id="b-body"><div class="ld"><div class="ld-dots"><span class="ld-dot"></span><span class="ld-dot"></span><span class="ld-dot"></span></div><div class="ld-text">Criando cenário...</div></div></div><div class="bf-obj" id="b-obj" style="display:none"><div class="bf-obj-tag">Objetivo</div><div class="bf-obj-text" id="b-obj-text"></div></div><div class="bf-rules" id="bf-rules"></div><button class="btn btn-pri" id="btn-go" onclick="startEp()" disabled>Entrar</button></div></div>
 <div class="screen" id="game"><div class="panel-left"><div class="pl-hdr"><div class="pl-logo">A Marca</div><div class="pl-turn" id="pl-turn"></div><div class="pl-ep" id="pl-ep"></div><div class="pl-pips" id="pl-pips"></div></div><div class="pl-gauges" id="pl-gauges"></div><div class="pl-profile" id="pl-profile"></div><div class="pl-log" id="pl-log"><div class="pl-log-title">Decisões</div></div></div><div class="panel-center"><div class="pc" id="pc"></div></div><div class="panel-right"><div class="pr-hdr"><div class="pr-dot"></div><div class="pr-title">Notícias do Mercado</div></div><div class="pr-feed" id="pr-feed"></div></div></div>
 <div class="screen" id="final"><div class="f-inner"><div class="f-val" id="f-val"></div><div class="f-title" id="f-title"></div><div class="f-sub" id="f-sub"></div><div class="f-summary" id="f-summary"></div><div class="rubric" id="f-rubric" style="display:none"></div><div class="f-buttons"><button class="btn btn-pri" id="btn-next" onclick="nextEp()" style="display:none">Próximo Episódio</button><button class="btn btn-ghost" id="btn-dl" onclick="dlReport()" style="display:none">Relatório</button><button class="btn btn-ghost" onclick="location.reload()">Reiniciar</button></div></div></div>
-<div class="screen" id="blocked"><div class="id-inner" style="max-width:560px">
-  <div class="id-tag">Simulação do dia concluída</div>
-  <div class="id-title" style="font-size:1.5rem;margin-bottom:.5rem">Você já jogou hoje</div>
-  <p style="font-size:.85rem;color:var(--muted);text-align:center;margin-bottom:1.5rem;line-height:1.7">Cada sessão conta. Use o tempo até amanhã para revisar os conteúdos indicados abaixo e voltar mais preparado.</p>
+<div class="tutorial-overlay" id="blocked-overlay"><div class="tutorial-box">
+  <div class="tut-title">Você já jogou hoje</div>
+  <p style="font-size:.85rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.7">Cada sessão conta. Use o tempo até amanhã para revisar os conteúdos indicados abaixo e voltar mais preparado.</p>
   <div id="blk-diag"></div>
-  <div style="margin-top:1.5rem;text-align:center">
+  <div style="margin-top:1rem;text-align:center">
     <p id="blk-next" style="font-family:var(--mono);font-size:.6rem;color:var(--muted);letter-spacing:1.5px"></p>
   </div>
 </div></div>
@@ -113,10 +112,8 @@ function saveSession(resultado,indicadores,rubrica,modulos,resumo){
   localStorage.setItem('marca_last_session',JSON.stringify(data));
 }
 function showBlocked(d){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('tutorial').classList.remove('open');
-  document.getElementById('blocked').classList.add('active');
-  show('blocked');
+  document.getElementById('blocked-overlay').classList.add('open');
   let h='';
   if(d.resultado==='expulso'){
     h+='<div style="background:rgba(217,48,37,.04);border:1.5px solid var(--red-b);border-radius:var(--r2);padding:1.2rem;margin-bottom:1rem"><div style="font-family:var(--mono);font-size:.55rem;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:.6rem;font-weight:600">Sessão anterior encerrada por conduta inadequada</div><div style="font-size:.82rem;color:var(--ink3);line-height:1.7">Em ambientes corporativos e acadêmicos, a comunicação profissional é uma competência essencial. Gestores de marca representam a empresa em todas as interações. Linguagem inadequada ou falta de seriedade comprometem a credibilidade do profissional.<br><br><strong style="color:var(--ink)">Use o dia de hoje para refletir sobre postura profissional e revisar os módulos abaixo.</strong></div></div>';
@@ -248,7 +245,6 @@ function fm(s){return s?s.replace(/\n/g,'<br>'):''}
     const today=new Date().toISOString().slice(0,10);
     if(d.date===today){
       document.getElementById('tutorial').classList.remove('open');
-      document.getElementById('modesel').classList.remove('active');
       showBlocked(d);
     }
   }catch(e){}
