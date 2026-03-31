@@ -205,7 +205,7 @@ function showFinal(j){
     [{n:'Pensamento Estratégico',k:'pensamento_estrategico'},{n:'Domínio Conceitual',k:'dominio_conceitual'},{n:'Orientação ao Consumidor',k:'orientacao_consumidor'},{n:'Gestão de Coerência',k:'gestao_coerencia'}].forEach(x=>{const v=rb[x.k]||3;const c=v>=4?'var(--grn)':v>=3?'var(--amb)':'var(--red)';rh+='<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem"><span style="font-size:.75rem;color:var(--ink3);width:190px">'+x.n+'</span><div style="flex:1;height:6px;background:var(--s1);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+(v*20)+'%;background:'+c+';border-radius:3px"></div></div><span style="font-family:var(--mono);font-size:.72rem;font-weight:600;width:32px;text-align:right;color:'+c+'">'+v+'/5</span></div>'});
     if(rb.justificativa)rh+='<div style="font-size:.78rem;color:var(--muted);line-height:1.6;margin-top:.8rem;padding-top:.8rem;border-top:1px solid var(--s2)">'+rb.justificativa+'</div>';rh+='</div>'}
   document.getElementById('f-rubric').innerHTML=rh;
-  document.getElementById('f-buttons').innerHTML='<button class="btn btn-ghost" onclick="downloadAudit()" style="width:100%;margin-bottom:.5rem;font-size:.7rem">Baixar log de auditoria (JSON)</button><p style="font-family:var(--mono);font-size:.6rem;color:var(--muted);letter-spacing:1.5px">Simulação encerrada. Próxima sessão disponível amanhã.</p>'}
+  document.getElementById('f-buttons').innerHTML='<button class="btn btn-pri" onclick="downloadReport()" style="width:100%;margin-bottom:.5rem;font-size:.7rem">Baixar relatório</button><p style="font-family:var(--mono);font-size:.6rem;color:var(--muted);letter-spacing:1.5px">Simulação encerrada. Próxima sessão disponível amanhã.</p>'}
 function buildIndicators(ind){let h='<div style="background:var(--bg);border:1.5px solid var(--s2);border-radius:var(--r2);padding:1.2rem;margin-bottom:1rem"><div style="font-family:var(--mono);font-size:.55rem;letter-spacing:2px;text-transform:uppercase;color:var(--pri);margin-bottom:.8rem;font-weight:600">Indicadores finais</div>';
   [{n:'Awareness',v:ind.awareness},{n:'Equity',v:ind.equity},{n:'Coerência',v:ind.coerencia},{n:'Satisfação',v:ind.satisfacao},{n:'Risco',v:ind.risco}].forEach(g=>{const c=g.n==='Risco'?(g.v<40?'var(--grn)':g.v<70?'var(--amb)':'var(--red)'):(g.v>50?'var(--grn)':'var(--red)');h+='<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem"><span style="font-size:.75rem;color:var(--ink3);width:90px">'+g.n+'</span><div style="flex:1;height:5px;background:var(--s1);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+g.v+'%;background:'+c+';border-radius:3px"></div></div><span style="font-family:var(--mono);font-size:.72rem;font-weight:600;width:32px;text-align:right;color:'+c+'">'+g.v+'%</span></div>'});return h+'</div>'}
 function buildModList(codes,color,title,showDesc){let h='<div style="background:'+(color==='var(--red)'?'rgba(217,48,37,.04)':'rgba(26,158,92,.04)')+';border:1.5px solid '+(color==='var(--red)'?'var(--red-b)':'rgba(26,158,92,.2)')+';border-radius:var(--r2);padding:1.2rem;margin-bottom:1rem"><div style="font-family:var(--mono);font-size:.55rem;letter-spacing:2px;text-transform:uppercase;color:'+color+';margin-bottom:.6rem;font-weight:600">'+title+'</div>';
@@ -222,8 +222,75 @@ function showBlocked(d){document.getElementById('ov-tutorial').classList.remove(
   if(d.resumo)h+='<div style="background:var(--bg);border:1.5px solid var(--s2);border-left:3px solid var(--pri);border-radius:var(--r2);padding:1rem;font-size:.82rem;color:var(--ink3);line-height:1.7;margin-bottom:1rem">'+d.resumo.replace(/\n/g,'<br>')+'</div>';
   document.getElementById('blk-diag').innerHTML=h;
   const tm=new Date();tm.setDate(tm.getDate()+1);document.getElementById('blk-next').textContent='Próxima sessão: '+tm.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}
-function downloadAudit(){const report={sessao:{nome:G.nome,modo:G.mode,perfil:G.perfil||null,prioridades:G.prior||null,total_turnos:G.totalTurnos,data:new Date().toISOString()},system_prompt:gSys(),indicadores_iniciais:{awareness:30,equity:40,coerencia:70,satisfacao:50,risco:25},indicadores_finais:{...G.ind},log_completo:G.auditLog};
-  const b=new Blob([JSON.stringify(report,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='audit_'+G.nome.replace(/\s+/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.json';a.click()}
+function downloadReport(){
+  const turnos=G.auditLog.filter(e=>e.tipo==='turno');
+  const labels=['Início',...turnos.map((t,i)=>'T'+(i+1))];
+  const aw=[30,...turnos.map(t=>t.indicadores_depois.awareness)];
+  const eq=[40,...turnos.map(t=>t.indicadores_depois.equity)];
+  const co=[70,...turnos.map(t=>t.indicadores_depois.coerencia)];
+  const sa=[50,...turnos.map(t=>t.indicadores_depois.satisfacao)];
+  const ri=[25,...turnos.map(t=>t.indicadores_depois.risco)];
+  const resultado=turnos.length?turnos[turnos.length-1].resultado||'parcial':'parcial';
+  const resLabel=resultado==='vitoria'?'Vitória':resultado==='parcial'?'Resultado Parcial':'Derrota';
+  const resColor=resultado==='vitoria'?'#1a9e5c':resultado==='parcial'?'#e8a317':'#d93025';
+  const final=turnos.length?turnos[turnos.length-1].resposta_completa||{}:{};
+  let h='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório — A Marca</title>';
+  h+='<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"><\/script>';
+  h+='<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:"Plus Jakarta Sans",system-ui,sans-serif;max-width:750px;margin:0 auto;padding:2rem 1.5rem;color:#1a1d2e;line-height:1.7;background:#fff}';
+  h+='h1{font-family:"Space Grotesk",sans-serif;font-size:1.8rem;color:#0074C7;border-bottom:2px solid #0074C7;padding-bottom:.5rem;margin-bottom:.3rem}';
+  h+='h2{font-family:"Space Grotesk",sans-serif;font-size:1.1rem;color:#0074C7;margin:1.8rem 0 .8rem;padding-bottom:.3rem;border-bottom:1px solid #e8eaef}';
+  h+='.meta{font-size:.85rem;color:#6b7080;margin-bottom:2rem}.result{display:inline-block;padding:.3rem .8rem;border-radius:6px;font-weight:600;font-size:.9rem;color:#fff;margin-bottom:1rem}';
+  h+='.card{background:#f7f8fa;border:1px solid #e8eaef;border-radius:10px;padding:1.2rem;margin-bottom:1rem}';
+  h+='.card-red{background:rgba(217,48,37,.04);border:1px solid rgba(217,48,37,.2)}.card-green{background:rgba(26,158,92,.04);border:1px solid rgba(26,158,92,.2)}';
+  h+='.tag{font-family:"JetBrains Mono",monospace;font-size:.65rem;letter-spacing:2px;text-transform:uppercase;font-weight:600;margin-bottom:.5rem}';
+  h+='.bar-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem}.bar-name{font-size:.8rem;color:#3d4155;width:90px}.bar-bg{flex:1;height:6px;background:#e8eaef;border-radius:3px;overflow:hidden}.bar-fill{height:100%;border-radius:3px}.bar-val{font-family:"JetBrains Mono",monospace;font-size:.75rem;font-weight:600;width:36px;text-align:right}';
+  h+='.turno{margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid #e8eaef}.turno-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}.turno-num{font-family:"JetBrains Mono",monospace;font-size:.7rem;color:#0074C7;font-weight:600;letter-spacing:1px}.turno-fase{font-size:.7rem;color:#6b7080}.turno-dec{background:#fff;border:1px solid #e8eaef;border-left:3px solid #0074C7;border-radius:8px;padding:.8rem;font-size:.82rem;margin-bottom:.6rem}.turno-eval{font-size:.82rem;color:#3d4155}.turno-delta{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.4rem}.delta-chip{font-family:"JetBrains Mono",monospace;font-size:.65rem;padding:.15rem .4rem;border-radius:4px}';
+  h+='.mod-item{padding:.4rem 0;border-bottom:1px solid #e8eaef}.mod-code{font-family:"JetBrains Mono",monospace;font-size:.72rem;font-weight:600;margin-right:.3rem}.mod-desc{font-size:.72rem;color:#6b7080;margin-top:.1rem}';
+  h+='@media print{body{padding:1rem;font-size:12px}h1{font-size:1.3rem}h2{font-size:1rem}.card{page-break-inside:avoid}}</style></head><body>';
+  h+='<h1>A Marca — Relatório de Simulação</h1>';
+  h+='<div class="meta">'+G.nome+' · '+G.mode.toUpperCase()+' · '+G.totalTurnos+' turnos · '+new Date().toLocaleDateString('pt-BR',{day:'numeric',month:'long',year:'numeric'})+'</div>';
+  h+='<div class="result" style="background:'+resColor+'">'+resLabel+'</div>';
+  // Chart
+  h+='<h2>Evolução dos indicadores</h2>';
+  h+='<div style="position:relative;width:100%;height:300px;margin-bottom:1.5rem"><canvas id="ch"></canvas></div>';
+  // Final indicators
+  h+='<h2>Indicadores finais</h2><div class="card">';
+  [{n:'Awareness',v:G.ind.awareness},{n:'Equity',v:G.ind.equity},{n:'Coerência',v:G.ind.coerencia},{n:'Satisfação',v:G.ind.satisfacao},{n:'Risco',v:G.ind.risco}].forEach(g=>{const c=g.n==='Risco'?(g.v<40?'#1a9e5c':g.v<70?'#e8a317':'#d93025'):(g.v>50?'#1a9e5c':'#d93025');h+='<div class="bar-row"><span class="bar-name">'+g.n+'</span><div class="bar-bg"><div class="bar-fill" style="width:'+g.v+'%;background:'+c+'"></div></div><span class="bar-val" style="color:'+c+'">'+g.v+'%</span></div>'});
+  h+='</div>';
+  // Turn by turn
+  h+='<h2>Análise turno a turno</h2>';
+  turnos.forEach((t,i)=>{
+    const d=t.delta||{};h+='<div class="turno"><div class="turno-header"><span class="turno-num">TURNO '+(i+1)+'</span><span class="turno-fase">'+t.fase+'</span></div>';
+    h+='<div class="turno-dec"><strong>Sua decisão:</strong><br>'+t.decisao_aluno.replace(/\n/g,'<br>')+'</div>';
+    if(t.avaliacao_ia)h+='<div class="turno-eval"><strong>Avaliação:</strong> '+t.avaliacao_ia.replace(/\n/g,'<br>')+'</div>';
+    if(t.consequencia_ia)h+='<div class="turno-eval" style="margin-top:.4rem"><strong>Impacto:</strong> '+t.consequencia_ia.replace(/\n/g,'<br>')+'</div>';
+    h+='<div class="turno-delta">';
+    ['awareness','equity','coerencia','satisfacao','risco'].forEach(k=>{const v=d[k]||0;const bg=v>0?(k==='risco'?'rgba(217,48,37,.1)':'rgba(26,158,92,.1)'):(v<0?(k==='risco'?'rgba(26,158,92,.1)':'rgba(217,48,37,.1)'):'rgba(0,0,0,.05)');const tc=v>0?(k==='risco'?'#d93025':'#1a9e5c'):(v<0?(k==='risco'?'#1a9e5c':'#d93025'):'#6b7080');h+='<span class="delta-chip" style="background:'+bg+';color:'+tc+'">'+k.substring(0,3).toUpperCase()+' '+(v>=0?'+':'')+v+'</span>'});
+    h+='</div></div>'});
+  // AI Summary
+  if(final.resumo_final){h+='<h2>Análise da IA</h2><div class="card" style="border-left:3px solid #0074C7">'+final.resumo_final.replace(/\n/g,'<br>')+'</div>'}
+  // Modules
+  const rev=[],dom=[];const ind=G.ind;
+  if(ind.coerencia>=60)dom.push('T04','T07');else rev.push('T04','T07');
+  if(ind.awareness>=50)dom.push('T05','T08');else rev.push('T05','T08');
+  if(ind.equity>=50)dom.push('T02','T03');else rev.push('T02','T03');
+  if(ind.satisfacao>=50)dom.push('T06');else rev.push('T06');
+  if(ind.risco<50)dom.push('T09');else rev.push('T09');
+  if(final.modulos_revisar)final.modulos_revisar.forEach(m=>{const c=m.substring(0,3);if(!rev.includes(c))rev.push(c)});
+  const MODS={'T02':'Propósito de Marca','T03':'Naming e Identidade','T04':'Personalidade de Marca','T05':'Comunicação de Marca','T06':'Brand Experience','T07':'Posicionamento','T08':'Brand Health Tracking','T09':'Reputação e Crise','T10':'Gestão na Prática'};
+  const DESCS={'T02':'Razão de existir, Canvas de Proposta de Valor, propósito universal','T03':'8 tipos de naming, critérios de escolha, identidade verbal','T04':'Aaker (5 dimensões), Arquétipos de Jung, atributos','T05':'Território, tom de voz, storytelling, comunicação integrada','T06':'Think, Sense, Feel, Do, Connect — jornada do cliente','T07':'Kotler, preço/diferencial/benefícios, mapa perceptual','T08':'NPS, SOV, Awareness, intenção de compra, métricas','T09':'Buffet, monitoramento, sentimento, gestão de crise','T10':'Profissional de branding, estrategista, gerente'};
+  const fRev=[...new Set(rev)];const fDom=[...new Set(dom)].filter(c=>!fRev.includes(c));
+  if(fRev.length){h+='<h2>Precisa revisar</h2><div class="card card-red"><div class="tag" style="color:#d93025">'+(resultado==='vitoria'?'Pontos a aprimorar':'Módulos recomendados')+'</div>';fRev.forEach(c=>{if(MODS[c])h+='<div class="mod-item"><span class="mod-code" style="color:#d93025">'+c+'</span>'+MODS[c]+'<div class="mod-desc">'+DESCS[c]+'</div></div>'});h+='</div>'}
+  if(fDom.length){h+='<h2>Pontos fortes</h2><div class="card card-green"><div class="tag" style="color:#1a9e5c">Demonstrou domínio</div>';fDom.forEach(c=>{if(MODS[c])h+='<div class="mod-item"><span class="mod-code" style="color:#1a9e5c">'+c+'</span>'+MODS[c]+'</div>'});h+='</div>'}
+  // Rubric
+  if(final.rubrica){h+='<h2>Rubrica de avaliação</h2><div class="card">';
+    [{n:'Pensamento Estratégico',k:'pensamento_estrategico'},{n:'Domínio Conceitual',k:'dominio_conceitual'},{n:'Orientação ao Consumidor',k:'orientacao_consumidor'},{n:'Gestão de Coerência',k:'gestao_coerencia'}].forEach(x=>{const v=final.rubrica[x.k]||3;const c=v>=4?'#1a9e5c':v>=3?'#e8a317':'#d93025';h+='<div class="bar-row"><span class="bar-name">'+x.n+'</span><div class="bar-bg"><div class="bar-fill" style="width:'+(v*20)+'%;background:'+c+'"></div></div><span class="bar-val" style="color:'+c+'">'+v+'/5</span></div>'});
+    if(final.rubrica.justificativa)h+='<div style="font-size:.82rem;color:#6b7080;margin-top:.8rem;padding-top:.8rem;border-top:1px solid #e8eaef">'+final.rubrica.justificativa+'</div>';h+='</div>'}
+  h+='<div style="margin-top:2rem;text-align:center;font-size:.7rem;color:#9ba0b0">A Marca — Simulador de Gestão de Branding · Galícia Educação</div>';
+  // Chart script at end
+  h+='<script>new Chart(document.getElementById("ch"),{type:"line",data:{labels:'+JSON.stringify(labels)+',datasets:[{label:"Awareness",data:'+JSON.stringify(aw)+',borderColor:"#378ADD",tension:.3,pointRadius:4},{label:"Equity",data:'+JSON.stringify(eq)+',borderColor:"#1D9E75",tension:.3,pointRadius:4},{label:"Coerência",data:'+JSON.stringify(co)+',borderColor:"#7F77DD",tension:.3,pointRadius:4},{label:"Satisfação",data:'+JSON.stringify(sa)+',borderColor:"#EF9F27",tension:.3,pointRadius:4},{label:"Risco",data:'+JSON.stringify(ri)+',borderColor:"#E24B4A",tension:.3,pointRadius:4,borderDash:[5,3]}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:100}}}});<\/script>';
+  h+='</body></html>';
+  const blob=new Blob([h],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='relatorio_'+G.nome.replace(/\s+/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.html';a.click()}
 async function cAPI(u,m){const b={model:MD,max_tokens:4096,system:[{type:'text',text:gSys(),cache_control:{type:'ephemeral'}}]};b.messages=u?[{role:'user',content:u}]:m;const r=await fetch(AU,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});if(!r.ok){const txt=await r.text();throw new Error('Erro '+r.status+': '+txt.substring(0,300))}const d=await r.json();return d.content.find(c=>c.type==='text')?.text||''}
 function pJ(t){
   // Strip common AI prefixes/suffixes
